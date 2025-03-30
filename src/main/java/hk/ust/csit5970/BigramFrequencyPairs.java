@@ -2,7 +2,7 @@ package hk.ust.csit5970;
 
 import java.io.IOException;
 import java.util.Arrays;
-// import java.util.Iterator;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -51,26 +51,26 @@ public class BigramFrequencyPairs extends Configured implements Tool {
 		public void map(LongWritable key, Text value, Context context)
 				throws IOException, InterruptedException {
 			String line = ((Text) value).toString();
-			// String[] words = line.trim().split("\\s+");
-			// 改进文本预处理：移除所有标点符号和特殊字符，转换为小写，并分割
-			String[] words = line.toLowerCase()
-				.replaceAll("[^a-zA-Z\\s]", " ")  // 将所有非字母字符替换为空格
-				.replaceAll("\\s+", " ")         // 将多个空格替换为单个空格
-				.trim()
-				.split("\\s+");			
+			String[] words = line.trim().split("\\s+");
+			
 			/*
 			 * TODO: Your implementation goes here.
 			 */
-			// 遍历所有单词，生成二元词组
-			for (int i = 0; i < words.length - 1; i++) {
-				String word1 = words[i];
-				String word2 = words[i + 1];
-				
-				// 只处理非空单词
-				if (!word1.isEmpty() && !word2.isEmpty()) {
-					// 设置二元词组
-					BIGRAM.set(word1, word2);
+			if (words.length > 1){
+				String previous_word = words[0];
+				for (int i = 1; i < words.length; i++) {
+					String w = words[i];
+					// Skip empty words
+					if (w.length() == 0) {
+						continue;
+					}
+					BIGRAM.set(previous_word, w);
 					context.write(BIGRAM, ONE);
+
+					BIGRAM.set(previous_word, "");
+					context.write(BIGRAM, ONE);
+
+					previous_word = w;
 				}
 			}
 		}
@@ -84,9 +84,7 @@ public class BigramFrequencyPairs extends Configured implements Tool {
 
 		// Reuse objects.
 		private final static FloatWritable VALUE = new FloatWritable();
-		// private final Map<String, Integer> firstWordCount = new HashMap<String, Integer>();
-		private static final Map<String, Integer> wordCounts = new HashMap<String, Integer>();
-
+		private final static FloatWritable TOTAL = new FloatWritable();
 
 		@Override
 		public void reduce(PairOfStrings key, Iterable<IntWritable> values,
@@ -94,25 +92,19 @@ public class BigramFrequencyPairs extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+			Iterator<IntWritable> iter = values.iterator();
 			int sum = 0;
-			for (IntWritable value : values) {
-				sum += value.get();
+			while (iter.hasNext()) {
+				sum += iter.next().get();
+			}		
+			if (key.getRightElement().length() == 0) {
+				VALUE.set((float) sum);
+				context.write(key, VALUE);
+				TOTAL.set((float) sum); 
+			} else {
+				VALUE.set((float) sum/TOTAL.get());
+				context.write(key, VALUE);
 			}
-			
-			// 更新单词计数
-			String leftWord = key.getLeftElement();
-			Integer currentCount = wordCounts.get(leftWord);
-			wordCounts.put(leftWord, (currentCount == null ? 0 : currentCount) + sum);			
-			
-			// 输出总计数
-			PairOfStrings totalKey = new PairOfStrings(leftWord, "");
-			VALUE.set((float)wordCounts.get(leftWord));
-			context.write(totalKey, VALUE);
-			
-			// 输出相对频率
-			float relativeFrequency = (float) sum / wordCounts.get(leftWord);
-			VALUE.set(relativeFrequency);
-			context.write(key, VALUE);
 		}
 	}
 	
@@ -126,9 +118,10 @@ public class BigramFrequencyPairs extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+			Iterator<IntWritable> iter = values.iterator();
 			int sum = 0;
-			for (IntWritable value : values) {
-				sum += value.get();
+			while (iter.hasNext()) {
+				sum += iter.next().get();
 			}
 			SUM.set(sum);
 			context.write(key, SUM);

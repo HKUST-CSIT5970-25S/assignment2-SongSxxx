@@ -56,16 +56,13 @@ public class BigramFrequencyStripes extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
-			// 遍历所有单词，生成二元词组
 			for (int i = 0; i < words.length - 1; i++) {
 				String word = words[i];
 				String nextWord = words[i + 1];
 				
-				// 创建新的stripe
 				STRIPE.clear();
 				STRIPE.put(nextWord, 1);
 				
-				// 设置key并输出
 				KEY.set(word);
 				context.write(KEY, STRIPE);
 			}
@@ -90,10 +87,8 @@ public class BigramFrequencyStripes extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
-			// 清空累加器
 			SUM_STRIPES.clear();
 			
-			// 合并所有stripes
 			for (HashMapStringIntWritable stripe : stripes) {
 				for (Map.Entry<String, Integer> entry : stripe.entrySet()) {
 					String word = entry.getKey();
@@ -102,13 +97,11 @@ public class BigramFrequencyStripes extends Configured implements Tool {
 				}
 			}
 			
-			// 计算总计数
 			int totalCount = 0;
 			for (Map.Entry<String, Integer> entry : SUM_STRIPES.entrySet()) {
 				totalCount += entry.getValue();
 			}
 			
-			// 输出总计数
 			BIGRAM.set(key.toString(), "");
 			FREQ.set(totalCount);
 			context.write(BIGRAM, FREQ);

@@ -44,14 +44,12 @@ public class CORStripes extends Configured implements Tool {
 			 * TODO: Your implementation goes here.
 			 */
 			
-			// 计算每个单词的频率
 			while (doc_tokenizer.hasMoreTokens()) {
 				String word = doc_tokenizer.nextToken();
 				Integer count = word_set.get(word);
 				word_set.put(word, (count == null ? 0 : count) + 1);
 			}
 			
-			// 输出每个单词的频率
 			for (Map.Entry<String, Integer> entry : word_set.entrySet()) {
 				context.write(new Text(entry.getKey()), new IntWritable(entry.getValue()));
 			}
@@ -92,7 +90,7 @@ public class CORStripes extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
-						// 对每个单词，创建其与其他单词的共现关系
+			
 			for (String word1 : sorted_word_set) {
 				MapWritable stripe = new MapWritable();
 				
@@ -126,7 +124,6 @@ public class CORStripes extends Configured implements Tool {
 			 */
 			MapWritable result = new MapWritable();
 			
-			// 合并所有 stripe
 			for (MapWritable stripe : values) {
 				for (Map.Entry<Writable, Writable> entry : stripe.entrySet()) {
 					Text word = (Text) entry.getKey();
@@ -202,7 +199,7 @@ public class CORStripes extends Configured implements Tool {
 				}
 			}
 			
-			// 计算相关系数
+			// 计算COR
 			String word1 = key.toString();
 			Integer freq1 = word_total_map.get(word1);
 			

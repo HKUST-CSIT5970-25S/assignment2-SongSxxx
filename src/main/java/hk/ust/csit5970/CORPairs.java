@@ -99,7 +99,6 @@ public class CORPairs extends Configured implements Tool {
 			 * TODO: Your implementation goes here.
 			 */
 			
-			// 收集当前行中的所有单词
 			List<String> words = new ArrayList<String>();
 			while (doc_tokenizer.hasMoreTokens()) {
 				words.add(doc_tokenizer.nextToken());
@@ -124,7 +123,6 @@ public class CORPairs extends Configured implements Tool {
 						word2 = temp;
 					}
 					
-					// 检查这个单词对是否已经处理过
 					String pair = word1 + "/" + word2;
 					if (!processedPairs.contains(pair)) {
 						processedPairs.add(pair);
@@ -217,7 +215,6 @@ public class CORPairs extends Configured implements Tool {
 			if (freq1 != null && freq2 != null) {
 				// 计算相关系数
 				double cor = (double) sum / (freq1 * freq2);
-				// 直接输出原始值，不进行格式化
 				context.write(key, new DoubleWritable(cor));
 			}
 		}
