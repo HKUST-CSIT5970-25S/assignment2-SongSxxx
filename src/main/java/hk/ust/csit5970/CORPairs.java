@@ -53,6 +53,18 @@ public class CORPairs extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+
+			// 计算每个单词的频率
+			while (doc_tokenizer.hasMoreTokens()) {
+				String word = doc_tokenizer.nextToken();
+				Integer count = word_set.get(word);
+				word_set.put(word, (count == null ? 0 : count) + 1);
+			}
+			
+			// 输出每个单词的频率
+			for (Map.Entry<String, Integer> entry : word_set.entrySet()) {
+				context.write(new Text(entry.getKey()), new IntWritable(entry.getValue()));
+			}
 		}
 	}
 
@@ -66,6 +78,11 @@ public class CORPairs extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+			int sum = 0;
+			for (IntWritable value : values) {
+				sum += value.get();
+			}
+			context.write(key, new IntWritable(sum));
 		}
 	}
 
@@ -81,6 +98,40 @@ public class CORPairs extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+			
+			// 收集当前行中的所有单词
+			List<String> words = new ArrayList<String>();
+			while (doc_tokenizer.hasMoreTokens()) {
+				words.add(doc_tokenizer.nextToken());
+			}
+			
+			// 生成所有可能的单词对，确保每个单词对只计算一次
+			Set<String> processedPairs = new HashSet<String>();
+			for (int i = 0; i < words.size(); i++) {
+				for (int j = i + 1; j < words.size(); j++) {
+					String word1 = words.get(i);
+					String word2 = words.get(j);
+					
+					// 跳过相同的单词
+					if (word1.equals(word2)) {
+						continue;
+					}
+
+					// 确保 word1 在字母顺序上小于 word2
+					if (word1.compareTo(word2) > 0) {
+						String temp = word1;
+						word1 = word2;
+						word2 = temp;
+					}
+					
+					// 检查这个单词对是否已经处理过
+					String pair = word1 + "/" + word2;
+					if (!processedPairs.contains(pair)) {
+						processedPairs.add(pair);
+						context.write(new PairOfStrings(word1, word2), new IntWritable(1));
+					}
+				}
+			}
 		}
 	}
 
@@ -93,6 +144,11 @@ public class CORPairs extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+			int sum = 0;
+			for (IntWritable value : values) {
+				sum += value.get();
+			}
+			context.write(key, new IntWritable(sum));
 		}
 	}
 
@@ -145,6 +201,25 @@ public class CORPairs extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+			int sum = 0;
+			for (IntWritable value : values) {
+				sum += value.get();
+			}
+			
+			// 获取单词对的频率
+			String word1 = key.getLeftElement();
+			String word2 = key.getRightElement();
+			
+			// 获取每个单词的频率
+			Integer freq1 = word_total_map.get(word1);
+			Integer freq2 = word_total_map.get(word2);
+			
+			if (freq1 != null && freq2 != null) {
+				// 计算相关系数
+				double cor = (double) sum / (freq1 * freq2);
+				// 直接输出原始值，不进行格式化
+				context.write(key, new DoubleWritable(cor));
+			}
 		}
 	}
 

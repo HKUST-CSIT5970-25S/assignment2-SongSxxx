@@ -43,6 +43,18 @@ public class CORStripes extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+			
+			// 计算每个单词的频率
+			while (doc_tokenizer.hasMoreTokens()) {
+				String word = doc_tokenizer.nextToken();
+				Integer count = word_set.get(word);
+				word_set.put(word, (count == null ? 0 : count) + 1);
+			}
+			
+			// 输出每个单词的频率
+			for (Map.Entry<String, Integer> entry : word_set.entrySet()) {
+				context.write(new Text(entry.getKey()), new IntWritable(entry.getValue()));
+			}
 		}
 	}
 
@@ -56,6 +68,11 @@ public class CORStripes extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+			int sum = 0;
+			for (IntWritable value : values) {
+				sum += value.get();
+			}
+			context.write(key, new IntWritable(sum));
 		}
 	}
 
@@ -75,6 +92,24 @@ public class CORStripes extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+						// 对每个单词，创建其与其他单词的共现关系
+			for (String word1 : sorted_word_set) {
+				MapWritable stripe = new MapWritable();
+				
+				// 收集当前单词与其他单词的共现关系
+				for (String word2 : sorted_word_set) {
+					if (!word1.equals(word2)) {
+						Text word2Text = new Text(word2);
+						IntWritable count = (IntWritable) stripe.get(word2Text);
+						stripe.put(word2Text, new IntWritable((count == null ? 0 : count.get()) + 1));
+					}
+				}
+				
+				// 只有当 stripe 不为空时才输出
+				if (!stripe.isEmpty()) {
+					context.write(new Text(word1), stripe);
+				}
+			}
 		}
 	}
 
@@ -89,6 +124,19 @@ public class CORStripes extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+			MapWritable result = new MapWritable();
+			
+			// 合并所有 stripe
+			for (MapWritable stripe : values) {
+				for (Map.Entry<Writable, Writable> entry : stripe.entrySet()) {
+					Text word = (Text) entry.getKey();
+					IntWritable count = (IntWritable) entry.getValue();
+					IntWritable currentCount = (IntWritable) result.get(word);
+					result.put(word, new IntWritable((currentCount == null ? 0 : currentCount.get()) + count.get()));
+				}
+			}
+			
+			context.write(key, result);
 		}
 	}
 
@@ -142,6 +190,34 @@ public class CORStripes extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+			MapWritable result = new MapWritable();
+			
+			// 合并所有 stripe
+			for (MapWritable stripe : values) {
+				for (Map.Entry<Writable, Writable> entry : stripe.entrySet()) {
+					Text word = (Text) entry.getKey();
+					IntWritable count = (IntWritable) entry.getValue();
+					IntWritable currentCount = (IntWritable) result.get(word);
+					result.put(word, new IntWritable((currentCount == null ? 0 : currentCount.get()) + count.get()));
+				}
+			}
+			
+			// 计算相关系数
+			String word1 = key.toString();
+			Integer freq1 = word_total_map.get(word1);
+			
+			if (freq1 != null) {
+				for (Map.Entry<Writable, Writable> entry : result.entrySet()) {
+					String word2 = ((Text) entry.getKey()).toString();
+					int count = ((IntWritable) entry.getValue()).get();
+					Integer freq2 = word_total_map.get(word2);
+					
+					if (freq2 != null && word1.compareTo(word2) < 0) {
+						double cor = (double) count / (freq1 * freq2);
+						context.write(new PairOfStrings(word1, word2), new DoubleWritable(cor));
+					}
+				}
+			}
 		}
 	}
 

@@ -3,6 +3,8 @@ package hk.ust.csit5970;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Iterator;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -54,6 +56,19 @@ public class BigramFrequencyStripes extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+			// 遍历所有单词，生成二元词组
+			for (int i = 0; i < words.length - 1; i++) {
+				String word = words[i];
+				String nextWord = words[i + 1];
+				
+				// 创建新的stripe
+				STRIPE.clear();
+				STRIPE.put(nextWord, 1);
+				
+				// 设置key并输出
+				KEY.set(word);
+				context.write(KEY, STRIPE);
+			}
 		}
 	}
 
@@ -75,6 +90,39 @@ public class BigramFrequencyStripes extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+			// 清空累加器
+			SUM_STRIPES.clear();
+			
+			// 合并所有stripes
+			for (HashMapStringIntWritable stripe : stripes) {
+				for (Map.Entry<String, Integer> entry : stripe.entrySet()) {
+					String word = entry.getKey();
+					int count = entry.getValue();
+					SUM_STRIPES.increment(word, count);
+				}
+			}
+			
+			// 计算总计数
+			int totalCount = 0;
+			for (Map.Entry<String, Integer> entry : SUM_STRIPES.entrySet()) {
+				totalCount += entry.getValue();
+			}
+			
+			// 输出总计数
+			BIGRAM.set(key.toString(), "");
+			FREQ.set(totalCount);
+			context.write(BIGRAM, FREQ);
+			
+			// 输出相对频率
+			for (Map.Entry<String, Integer> entry : SUM_STRIPES.entrySet()) {
+				String nextWord = entry.getKey();
+				int count = entry.getValue();
+				float relativeFreq = (float) count / totalCount;
+				
+				BIGRAM.set(key.toString(), nextWord);
+				FREQ.set(relativeFreq);
+				context.write(BIGRAM, FREQ);
+			}
 		}
 	}
 
@@ -94,6 +142,21 @@ public class BigramFrequencyStripes extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+
+			// 清空累加器
+			SUM_STRIPES.clear();
+			
+			// 合并所有stripes
+			for (HashMapStringIntWritable stripe : stripes) {
+				for (Map.Entry<String, Integer> entry : stripe.entrySet()) {
+					String word = entry.getKey();
+					int count = entry.getValue();
+					SUM_STRIPES.increment(word, count);
+				}
+			}
+			
+			// 输出合并后的结果
+			context.write(key, SUM_STRIPES);
 		}
 	}
 
