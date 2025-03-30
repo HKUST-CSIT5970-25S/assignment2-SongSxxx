@@ -1,5 +1,5 @@
 import re
-# from collections import Counter
+from collections import Counter
 from pandas import DataFrame
 
 path_to_input_text = "cor-demo-sample.txt" # Replace this by your testing input data.
@@ -12,11 +12,11 @@ def sort_dict_by_keys(d, reverse=True):
     keys.sort(reverse=reverse)
     return [(key,d[key]) for key in keys]
 
-def count_items(items):
-    d = {}
-    for item in items:
-        d[item] = d.get(item, 0) + 1
-    return d
+# def count_items(items):
+#     d = {}
+#     for item in items:
+#         d[item] = d.get(item, 0) + 1
+#     return d
 
 # Step 1: Tokenize the input text.
 paragraph = ""
